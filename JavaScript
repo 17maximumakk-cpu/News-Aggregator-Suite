@@ -1,0 +1,482 @@
+<!-- news.html - Новостной агрегатор на JavaScript (веб-приложение) -->
+<!-- Атрибуция: Данные предоставлены GNews API и NewsAPI -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📰 Новостной агрегатор · Веб</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .header h1 {
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .api-key-input {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .api-key-input input {
+            padding: 8px 12px;
+            border-radius: 20px;
+            border: none;
+            width: 250px;
+        }
+        .api-key-input button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+        .search-bar {
+            background: #ecf0f1;
+            padding: 15px 30px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .search-bar input {
+            flex: 1;
+            padding: 12px;
+            border-radius: 30px;
+            border: 1px solid #ddd;
+            font-size: 16px;
+        }
+        .search-bar button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .search-bar button:hover {
+            background: #2980b9;
+        }
+        .categories {
+            background: #f8f9fa;
+            padding: 10px 30px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .category-btn {
+            background: #bdc3c7;
+            color: #2c3e50;
+            border: none;
+            padding: 6px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .category-btn:hover {
+            background: #95a5a6;
+            color: white;
+        }
+        .news-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+            padding: 30px;
+        }
+        .news-card {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+        .news-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+        .news-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background: #f0f0f0;
+        }
+        .news-content {
+            padding: 15px;
+        }
+        .news-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            line-height: 1.3;
+        }
+        .news-description {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+        .news-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: #999;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+        .favorite-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #f39c12;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        .pagination button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+        .pagination span {
+            padding: 8px 16px;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 18px;
+            color: #666;
+        }
+        .favorites-panel {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            background: white;
+            border-radius: 40px;
+            padding: 10px 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            cursor: pointer;
+            z-index: 1000;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 24px;
+            padding: 20px;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            width: 90%;
+        }
+        .fav-list {
+            list-style: none;
+        }
+        .fav-list li {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+        @media (max-width: 768px) {
+            .news-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>📰 Новостной агрегатор</h1>
+        <div class="api-key-input">
+            <input type="text" id="apiKey" placeholder="GNews API Key" value="">
+            <button id="saveApiKey">Сохранить</button>
+        </div>
+    </div>
+    <div class="search-bar">
+        <input type="text" id="searchQuery" placeholder="Поиск новостей...">
+        <button id="searchBtn">🔍 Найти</button>
+    </div>
+    <div class="categories">
+        <button class="category-btn" data-cat="general">Главные</button>
+        <button class="category-btn" data-cat="world">Мир</button>
+        <button class="category-btn" data-cat="nation">Страна</button>
+        <button class="category-btn" data-cat="business">Бизнес</button>
+        <button class="category-btn" data-cat="technology">Технологии</button>
+        <button class="category-btn" data-cat="entertainment">Развлечения</button>
+        <button class="category-btn" data-cat="sports">Спорт</button>
+        <button class="category-btn" data-cat="science">Наука</button>
+        <button class="category-btn" data-cat="health">Здоровье</button>
+    </div>
+    <div id="newsContainer" class="news-grid"></div>
+    <div class="pagination" id="pagination"></div>
+</div>
+<div class="favorites-panel" id="favoritesPanel">
+    ⭐ Избранное (<span id="favCount">0</span>)
+</div>
+<div id="favoritesModal" class="modal">
+    <div class="modal-content">
+        <h3>⭐ Избранные новости</h3>
+        <ul class="fav-list" id="favList"></ul>
+        <button id="closeModal" style="margin-top:15px; padding:8px 16px; background:#e74c3c; color:white; border:none; border-radius:20px; cursor:pointer;">Закрыть</button>
+    </div>
+</div>
+<script>
+    // Конфигурация
+    let API_KEY = localStorage.getItem('gnews_api_key') || '';
+    let currentPage = 1;
+    let totalResults = 0;
+    let currentQuery = '';
+    let currentCategory = 'general';
+    let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+    let articles = [];
+
+    const API_URL = 'https://gnews.io/api/v4/search';
+    const BACKUP_API_URL = 'https://newsapi.org/v2/everything';
+    let backupApiKey = '';
+
+    // DOM элементы
+    const newsContainer = document.getElementById('newsContainer');
+    const paginationDiv = document.getElementById('pagination');
+    const favCountSpan = document.getElementById('favCount');
+    const favoritesPanel = document.getElementById('favoritesPanel');
+    const favoritesModal = document.getElementById('favoritesModal');
+    const favList = document.getElementById('favList');
+    const closeModalBtn = document.getElementById('closeModal');
+    const apiKeyInput = document.getElementById('apiKey');
+    const saveApiKeyBtn = document.getElementById('saveApiKey');
+    const searchQueryInput = document.getElementById('searchQuery');
+    const searchBtn = document.getElementById('searchBtn');
+
+    if (API_KEY) apiKeyInput.value = API_KEY;
+
+    saveApiKeyBtn.onclick = () => {
+        API_KEY = apiKeyInput.value.trim();
+        if (API_KEY) localStorage.setItem('gnews_api_key', API_KEY);
+        else localStorage.removeItem('gnews_api_key');
+        alert('API ключ сохранён');
+        loadNews();
+    };
+
+    async function fetchNews(query, category, page) {
+        if (!API_KEY) {
+            newsContainer.innerHTML = '<div class="loading">⚠️ Введите API ключ</div>';
+            return { articles: [], total: 0 };
+        }
+        const params = new URLSearchParams({
+            q: query || category,
+            lang: 'en',
+            country: 'us',
+            max: 12,
+            page: page,
+            apikey: API_KEY
+        });
+        try {
+            const response = await fetch(`${API_URL}?${params}`);
+            const data = await response.json();
+            if (data.articles) {
+                return { articles: data.articles, total: data.totalResults || 0 };
+            } else if (data.errors) {
+                console.warn('GNews API error:', data.errors);
+                return { articles: [], total: 0 };
+            }
+            return { articles: [], total: 0 };
+        } catch (error) {
+            console.error('Ошибка загрузки:', error);
+            return { articles: [], total: 0 };
+        }
+    }
+
+    async function loadNews() {
+        newsContainer.innerHTML = '<div class="loading">📰 Загрузка новостей...</div>';
+        const result = await fetchNews(currentQuery, currentCategory, currentPage);
+        articles = result.articles;
+        totalResults = result.total;
+        renderNews();
+        renderPagination();
+    }
+
+    function renderNews() {
+        if (!articles.length) {
+            newsContainer.innerHTML = '<div class="loading">Новости не найдены</div>';
+            return;
+        }
+        newsContainer.innerHTML = '';
+        articles.forEach((article, idx) => {
+            const isFav = favorites.some(f => f.url === article.url);
+            const card = document.createElement('div');
+            card.className = 'news-card';
+            card.innerHTML = `
+                ${article.image ? `<img class="news-image" src="${article.image}" alt="news image" onerror="this.style.display='none'">` : ''}
+                <div class="news-content">
+                    <div class="news-title">${escapeHtml(article.title || 'Без заголовка')}</div>
+                    <div class="news-description">${escapeHtml((article.description || article.content || '').substring(0, 120))}...</div>
+                    <div class="news-meta">
+                        <span>📰 ${article.source?.name || 'Неизвестно'}</span>
+                        <span>📅 ${article.publishedAt?.substring(0, 10) || ''}</span>
+                        <button class="favorite-btn" data-url="${article.url}" data-title="${escapeHtml(article.title)}" data-source="${article.source?.name}" data-date="${article.publishedAt}" data-image="${article.image || ''}">${isFav ? '★' : '☆'}</button>
+                    </div>
+                </div>
+            `;
+            card.addEventListener('click', (e) => {
+                if (!e.target.classList.contains('favorite-btn')) {
+                    window.open(article.url, '_blank');
+                }
+            });
+            newsContainer.appendChild(card);
+        });
+        attachFavoriteButtons();
+        updateFavCount();
+    }
+
+    function attachFavoriteButtons() {
+        document.querySelectorAll('.favorite-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const url = btn.dataset.url;
+                const existing = favorites.find(f => f.url === url);
+                if (existing) {
+                    favorites = favorites.filter(f => f.url !== url);
+                } else {
+                    favorites.push({
+                        url: url,
+                        title: btn.dataset.title,
+                        source: btn.dataset.source,
+                        date: btn.dataset.date,
+                        image: btn.dataset.image
+                    });
+                }
+                localStorage.setItem('favorites', JSON.stringify(favorites));
+                btn.textContent = existing ? '☆' : '★';
+                updateFavCount();
+            };
+        });
+    }
+
+    function renderPagination() {
+        const totalPages = Math.ceil(totalResults / 12);
+        paginationDiv.innerHTML = '';
+        if (currentPage > 1) {
+            const prevBtn = document.createElement('button');
+            prevBtn.textContent = '◀ Предыдущая';
+            prevBtn.onclick = () => { currentPage--; loadNews(); };
+            paginationDiv.appendChild(prevBtn);
+        }
+        const pageSpan = document.createElement('span');
+        pageSpan.textContent = `Страница ${currentPage} из ${totalPages || 1}`;
+        paginationDiv.appendChild(pageSpan);
+        if (currentPage < totalPages) {
+            const nextBtn = document.createElement('button');
+            nextBtn.textContent = 'Следующая ▶';
+            nextBtn.onclick = () => { currentPage++; loadNews(); };
+            paginationDiv.appendChild(nextBtn);
+        }
+    }
+
+    function updateFavCount() {
+        favCountSpan.textContent = favorites.length;
+    }
+
+    function showFavoritesModal() {
+        favList.innerHTML = '';
+        if (!favorites.length) {
+            favList.innerHTML = '<li>Нет избранных новостей</li>';
+        } else {
+            favorites.forEach(fav => {
+                const li = document.createElement('li');
+                li.textContent = fav.title;
+                li.onclick = () => window.open(fav.url, '_blank');
+                favList.appendChild(li);
+            });
+        }
+        favoritesModal.style.display = 'flex';
+    }
+
+    favoritesPanel.onclick = showFavoritesModal;
+    closeModalBtn.onclick = () => favoritesModal.style.display = 'none';
+    window.onclick = (e) => { if (e.target === favoritesModal) favoritesModal.style.display = 'none'; };
+
+    document.querySelectorAll('.category-btn').forEach(btn => {
+        btn.onclick = () => {
+            currentCategory = btn.dataset.cat;
+            currentQuery = '';
+            searchQueryInput.value = '';
+            currentPage = 1;
+            loadNews();
+        };
+    });
+
+    searchBtn.onclick = () => {
+        currentQuery = searchQueryInput.value.trim();
+        currentCategory = '';
+        currentPage = 1;
+        loadNews();
+    };
+    searchQueryInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') searchBtn.click();
+    });
+
+    function escapeHtml(str) {
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    loadNews();
+</script>
+</body>
+</html>
